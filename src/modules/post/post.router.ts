@@ -5,7 +5,10 @@ import authMiddleware, { UserRole } from '../../lib/middlewares/auth';
 const router = express.Router();
 
 
-
+router.get(
+    "/",
+    postController.getAllPost
+)
 
 router.post(
     "/", authMiddleware(UserRole.Admin), postController.createPost
