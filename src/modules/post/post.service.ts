@@ -96,7 +96,7 @@ const getAllPost = async (payload: { search: string | undefined, tags: string[] 
 
 const getPostById = async (postId: string) => {
 
-    // use transaction to increment view count and fetch post data /** if any function or query failed revert those action */
+    //! use transaction to increment view count and fetch post data /** if any function or query failed revert those action */
     const result = await prisma.$transaction(async (tx) => {
         // increment view count
         tx.post.update({
