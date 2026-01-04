@@ -13,6 +13,10 @@ router.get(
 router.post(
     "/", authMiddleware(UserRole.Admin), postController.createPost
 )
+router.get(
+    "/:id",
+    postController.getPostById
+)
 
 
 export const postRouter = router;

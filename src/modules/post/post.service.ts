@@ -1,3 +1,4 @@
+import { create } from "node:domain";
 import { Post, PostStatus } from "../../../generated/prisma/client";
 import { PostWhereInput } from "../../../generated/prisma/models";
 import { prisma } from "../../lib/prisma";
@@ -13,7 +14,7 @@ const createPost = async (data: Omit<Post, "id" | "CreatedAt" | "updatedAt">, us
     return result;
 }
 
-const getAllPost = async (payload: { search: string | undefined, tags: string[] | [], isFeatured: boolean | undefined, status: PostStatus | undefined, authorId: string | undefined }) => {
+const getAllPost = async (payload: { search: string | undefined, tags: string[] | [], isFeatured: boolean | undefined, status: PostStatus | undefined, authorId: string | undefined, page: number, limit: number, skip: number, sortBy: string, sortOrder: string }) => {
     // build dynamic where conditions
     const andConditions: PostWhereInput[] = [];
     // search filter any of title, content, tags
@@ -67,14 +68,62 @@ const getAllPost = async (payload: { search: string | undefined, tags: string[] 
         })
     }
     const allPost = await prisma.post.findMany({
+        take: payload.limit,
+        skip: payload.skip,
+        where: {
+            AND: andConditions
+        },
+        // apply order by if sortBy and sortOrder are provided
+        orderBy: payload.sortBy && payload.sortOrder ? { [payload.sortBy]: payload.sortOrder } : {
+            createdAt: 'desc'
+        }
+    });
+    const total = await prisma.post.count({
         where: {
             AND: andConditions
         }
-    });
-    return allPost;
+    })
+    return {
+        data: allPost,
+        pagination: {
+            total,
+            page: payload.page,
+            limit: payload.limit,
+            totalPages: Math.ceil(total / payload.limit),
+        }
+    };
+}
+
+const getPostById = async (postId: string) => {
+
+    // use transaction to increment view count and fetch post data /** if any function or query failed revert those action */
+    const result = await prisma.$transaction(async (tx) => {
+        // increment view count
+        tx.post.update({
+            where: {
+                id: postId,
+            },
+            data: {
+                views: {
+                    increment: 1,
+                }
+            }
+        });
+        // fetch post data
+        const postData = await tx.post.findUnique({
+            where: {
+                id: postId,
+            }
+        });
+
+        return postData;
+    })
+
+    return result;
 }
 
 export const postService = {
     createPost,
-    getAllPost
+    getAllPost,
+    getPostById
 }
