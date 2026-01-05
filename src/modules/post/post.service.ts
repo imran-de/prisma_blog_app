@@ -1,5 +1,5 @@
 import { create } from "node:domain";
-import { Post, PostStatus } from "../../../generated/prisma/client";
+import { CommentStatus, Post, PostStatus } from "../../../generated/prisma/client";
 import { PostWhereInput } from "../../../generated/prisma/models";
 import { prisma } from "../../lib/prisma";
 
@@ -76,6 +76,9 @@ const getAllPost = async (payload: { search: string | undefined, tags: string[] 
         // apply order by if sortBy and sortOrder are provided
         orderBy: payload.sortBy && payload.sortOrder ? { [payload.sortBy]: payload.sortOrder } : {
             createdAt: 'desc'
+        },
+        include: {
+            _count: { select: { comments: true } }
         }
     });
     const total = await prisma.post.count({
@@ -113,6 +116,38 @@ const getPostById = async (postId: string) => {
         const postData = await tx.post.findUnique({
             where: {
                 id: postId,
+            },
+            include: {
+                comments: {
+                    where: {
+                        parentId: null,
+                        status: CommentStatus.Approved,
+                    },
+                    orderBy: {
+                        createdAt: 'desc',
+                    },
+                    include: {
+                        replies: {
+                            where: { status: CommentStatus.Approved },
+                            orderBy: {
+                                createdAt: 'asc',
+                            },
+                            include: {
+                                replies: {
+                                    where: {
+                                        status: CommentStatus.Approved
+                                    },
+                                    orderBy: {
+                                        createdAt: 'asc',
+                                    }
+                                },
+                            }
+                        },
+                    }
+                },
+                _count: {
+                    select: { comments: true }
+                }
             }
         });
 
