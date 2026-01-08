@@ -35,6 +35,11 @@ router.delete(
     authMiddleware(UserRole.Admin, UserRole.User),
     postController.deletePost
 )
+router.get(
+    "/stats/all",
+    authMiddleware(UserRole.Admin),
+    postController.getPostStats
+);
 
 
 export const postRouter = router;

@@ -262,11 +262,78 @@ const deletePost = async (postId: string, authorId: string, isAdmin: boolean) =>
     return result;
 }
 
+const getPostStats = async () => {
+    // total posts
+    const totalPosts = await prisma.post.count();
+    // total featured posts
+    const totalFeaturedPosts = await prisma.post.count({
+        where: {
+            isFeatured: true,
+        }
+    });
+    const publishedPosts = await prisma.post.count({
+        where: {
+            status: PostStatus.Published,
+        }
+    });
+    const draftPosts = await prisma.post.count({
+        where: {
+            status: PostStatus.Draft,
+        }
+    });
+    const archivedPosts = await prisma.post.count({
+        where: {
+            status: PostStatus.Archived,
+        }
+    });
+    const totalComments = await prisma.comments.count();
+    const totalViews = await prisma.post.aggregate({
+        _sum: {
+            views: true,
+        }
+    });
+
+
+    // another way to get totals using transaction
+    const totalStatsAnotherWay = await prisma.$transaction(async (tx) => {
+        const [totalPosts, totalFeaturedPosts, publishedPosts, draftPosts, archivedPosts, totalComments, totalViews, approvedComments, totalUsers, adminCount, userCount] = await Promise.all([
+            await tx.post.count(),
+            await tx.post.count({ where: { isFeatured: true } }),
+            await tx.post.count({ where: { status: PostStatus.Published } }),
+            await tx.post.count({ where: { status: PostStatus.Draft } }),
+            await tx.post.count({ where: { status: PostStatus.Archived } }),
+            await tx.comments.count(),
+            await tx.post.aggregate({ _sum: { views: true } }),
+            await tx.comments.count({ where: { status: CommentStatus.Approved } }),
+            await tx.user.count(),
+            await tx.user.count({ where: { role: 'Admin' } }),
+            await tx.user.count({ where: { role: 'User' } }),
+        ]);
+
+        return {
+            totalPosts, totalFeaturedPosts, publishedPosts, draftPosts, archivedPosts, totalComments, totalViews: totalViews._sum.views, approvedComments, totalUsers, adminCount, userCount
+        }
+    });
+
+    // return stats
+    return {
+        totalPosts,
+        totalFeaturedPosts,
+        publishedPosts,
+        draftPosts,
+        archivedPosts,
+        totalComments,
+        totalViews: totalViews._sum.views || 0,
+        totalStatsAnotherWay,
+    }
+}
+
 export const postService = {
     createPost,
     getAllPost,
     getPostById,
     getMyPosts,
     updatePost,
-    deletePost
+    deletePost,
+    getPostStats,
 }
