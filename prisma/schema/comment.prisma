@@ -1,0 +1,22 @@
+model Comments {
+    id        String        @id @default(uuid())
+    content   String        @db.Text
+    authorId  String //better auth
+    postId    String
+    post      Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
+    parentId  String?
+    parent    Comments?     @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+    status    CommentStatus @default(Approved)
+    createdAt DateTime      @default(now())
+    updateAt  DateTime      @updatedAt
+    replies   Comments[]    @relation("CommentReplies")
+
+    @@index([postId])
+    @@index([authorId])
+    @@map("comments")
+}
+
+enum CommentStatus {
+    Approved
+    Reject
+}
