@@ -89,8 +89,79 @@ const getPostById = async (req: Request, res: Response) => {
     }
 }
 
+const getMyPosts = async (req: Request, res: Response) => {
+    try {
+        const user = req.user;
+        if (!user) {
+            return res.status(400).json({
+                error: "not permit to action",
+            })
+        }
+        const result = await postService.getMyPosts(user.id as string);
+        res.status(200).json(result);
+    } catch (err) {
+        res.status(400).json({
+            error: "Get my posts fetched failed",
+            details: err,
+        })
+    }
+}
+
+const updatePost = async (req: Request, res: Response) => {
+    try {
+        const user = req.user;
+        if (!user) {
+            return res.status(400).json({
+                error: "not permit to action",
+            })
+        }
+        const { postId } = req.params;
+        if (!postId) {
+            return res.status(400).json({
+                error: "Post ID is required",
+            })
+        }
+        const isAdmin = user.role?.includes('Admin');
+        const result = await postService.updatePost(postId as string, req.body, user.id as string, isAdmin);
+        res.status(200).json(result);
+    } catch (err) {
+        res.status(400).json({
+            error: "Update post failed",
+            details: err,
+        })
+    }
+}
+
+const deletePost = async (req: Request, res: Response) => {
+    try {
+        const user = req.user;
+        if (!user) {
+            return res.status(400).json({
+                error: "not permit to action",
+            })
+        }
+        const { postId } = req.params;
+        if (!postId) {
+            return res.status(400).json({
+                error: "Post ID is required",
+            })
+        }
+        const isAdmin = user.role?.includes('Admin');
+        const result = await postService.deletePost(postId as string, user.id as string, isAdmin);
+        res.status(200).json(result);
+    } catch (err) {
+        res.status(400).json({
+            error: "Delete post failed",
+            details: err,
+        })
+    }
+}
+
 export const postController = {
     createPost,
     getAllPost,
     getPostById,
+    getMyPosts,
+    updatePost,
+    deletePost,
 }

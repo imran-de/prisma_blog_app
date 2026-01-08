@@ -157,8 +157,116 @@ const getPostById = async (postId: string) => {
     return result;
 }
 
+const getMyPosts = async (userId: string) => {
+    // validate user exists and is active
+    await prisma.user.findUniqueOrThrow({
+        where: {
+            id: userId,
+            status: 'ACTIVE',
+        },
+        select: {
+            id: true,
+            status: true,
+        }
+    });
+    // fetch posts by authorId
+    const result = await prisma.post.findMany({
+        where: {
+            authorId: userId,
+        },
+        orderBy: {
+            createdAt: 'desc',
+        },
+        include: {
+            _count: {
+                select: { comments: true }
+            },
+        }
+    });
+    // total count
+    const total = await prisma.post.count({
+        where: {
+            authorId: userId,
+        }
+    })
+
+    //
+    const totalAnotherWay = await prisma.post.aggregate({
+        where: {
+            authorId: userId,
+        },
+        _count: {
+            id: true,
+        },
+    });
+    return { data: result, total };
+}
+
+/**
+ * 
+ * user only update own post without isFeatured
+ * admin can update any post
+ */
+const updatePost = async (postId: string, data: Partial<Post>, authorId: string, isAdmin: boolean) => {
+
+    // validate post exists and belongs to author
+    const postExists = await prisma.post.findUniqueOrThrow({
+        where: {
+            id: postId
+        },
+        select: {
+            authorId: true,
+        }
+    });
+    if (!isAdmin && postExists.authorId !== authorId) {
+        throw new Error("Not permitted to update this post");
+    }
+    if (!isAdmin) {
+        // remove isFeatured from data
+        delete data.isFeatured;
+    }
+    const result = await prisma.post.update({
+        where: {
+            id: postId,
+            authorId: authorId,
+        },
+        data,
+    });
+
+    return result;
+}
+/**
+ * user only delete own post
+ * admin can delete any post
+ */
+const deletePost = async (postId: string, authorId: string, isAdmin: boolean) => {
+
+    // validate post exists and belongs to author
+    const postExists = await prisma.post.findUniqueOrThrow({
+        where: {
+            id: postId
+        },
+        select: {
+            authorId: true,
+        }
+    });
+    if (!isAdmin && postExists.authorId !== authorId) {
+        throw new Error("Not permitted to delete this post");
+    }
+    const result = await prisma.post.delete({
+        where: {
+            id: postId,
+            authorId: authorId,
+        },
+    });
+    return result;
+}
+
 export const postService = {
     createPost,
     getAllPost,
-    getPostById
+    getPostById,
+    getMyPosts,
+    updatePost,
+    deletePost
 }

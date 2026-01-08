@@ -11,11 +11,29 @@ router.get(
 )
 
 router.post(
-    "/", authMiddleware(UserRole.Admin), postController.createPost
+    "/", authMiddleware(UserRole.Admin, UserRole.User), postController.createPost
 )
 router.get(
     "/:id",
     postController.getPostById
+)
+
+router.get(
+    "/my/posts",
+    authMiddleware(UserRole.Admin, UserRole.User),
+    postController.getMyPosts
+)
+
+router.patch(
+    "/:postId",
+    authMiddleware(UserRole.Admin, UserRole.User),
+    postController.updatePost
+)
+
+router.delete(
+    "/:postId",
+    authMiddleware(UserRole.Admin, UserRole.User),
+    postController.deletePost
 )
 
 
