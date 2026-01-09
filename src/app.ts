@@ -4,6 +4,8 @@ import { postRouter } from './modules/post/post.router';
 import { auth } from './lib/auth';
 import cors from 'cors';
 import { commentRouter } from './modules/comment/comment.router';
+import globalErrorHandler from './lib/middlewares/globalErrorHandler';
+import { notFoundHandler } from './lib/middlewares/notFound';
 
 const app: Application = express();
 
@@ -22,5 +24,11 @@ app.use("/comments", commentRouter)
 app.get("/", (req, res) => {
     res.send("Hello World!");
 });
+
+
+// Global Error Handler
+app.use(globalErrorHandler);
+// 404 Not Found Handler
+app.use(notFoundHandler)
 
 export default app;

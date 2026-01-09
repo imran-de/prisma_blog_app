@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { postService } from "./post.service";
 import { Post, PostStatus } from "../../../generated/prisma/client";
 import paginationSortingHelper from "../../helpers/paginationSortingHelper";
@@ -157,15 +157,17 @@ const deletePost = async (req: Request, res: Response) => {
     }
 }
 
-const getPostStats = async (req: Request, res: Response) => {
+const getPostStats = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const result = await postService.getPostStats();
         res.status(200).json(result);
     } catch (err) {
-        res.status(400).json({
+        /*res.status(400).json({
             error: "Get post stats failed",
             details: err,
-        })
+        })*/
+        // global error handler will handle it
+        next(err);
     }
 }
 
